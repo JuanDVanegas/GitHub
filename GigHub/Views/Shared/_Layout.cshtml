@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Mi aplicación ASP.NET</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700" rel="stylesheet">
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                @Html.ActionLink("GigHub", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("Agregar Concierto", "Create", "Gigs")</li>
+                </ul>
+                @Html.Partial("_LoginPartial")
+            </div>
+        </div>
+    </div>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer>
+            <p>&copy; @DateTime.Now.Year - Mi aplicación ASP.NET</p>
+        </footer>
+    </div>
+
+    @Scripts.Render("~/bundles/lib")
+    @Scripts.Render("~/bundles/app")
+    @Scripts.Render("~/js/kendo")
+    @RenderSection("scripts", required: false)
+
+<script type="text/x-tmpl" id="notification-template">
+    #if(type == 1){#
+        <li><span class="highlight">#: gig.artist.name #</span> ha cancelado el concierto en #: gig.venue # el #: moment(gig.dateTime).format("DD [de] MMMM [a las] h:mm a") #</li>
+    #}else if(type == 2){
+        var changes = [],
+            originalValues = [],
+            newValues = [];
+    
+        if(originalVenue != gig.venue){
+            changes.push('el lugar');
+            originalValues.push(originalVenue);
+            newValues.push(gig.venue);
+        }
+        
+        if(originalDateTime != gig.dateTime){
+            changes.push('la fecha/hora');
+            originalValues.push(moment(originalDateTime).format("DD [de] MMMM [a las] h:mm a"));
+            newValues.push(moment(gig.dateTime).format("DD [de] MMMM [a las] h:mm a"));
+        }
+        # <li><span class="highlight">#: gig.artist.name #</span> ha cambiado #: changes.join(' y ') # de el concierto de #: originalValues.join('/') # a #: newValues.join('/')#</li> #
+    }#
+</script>
+    <script>
+        $(document).ready(function () {
+            moment.locale("ES-es");
+            $.getJSON("/api/notifications/getNotifications",
+                function (notifications) {
+                    if (notifications.length === 0)
+                        return;
+
+                    $(".js-notifications-count").text(notifications.length).removeClass("hide").addClass("animated bounceInDown");
+
+                    $(".notifications").popover({
+                        html: true,
+                        title: "Notificaciones",
+                        content: function () {
+                            var template = kendo.template($("#notification-template").html());
+                            var result = kendo.render(template, notifications);
+                            var html = $("<ul/>").addClass("notifications").html(result);
+                            return html;
+                        },
+                        placement: "bottom",
+                        template:'<div class="popover popover-notifications" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
+                    }).on("show.bs.popover", function() {
+                        $.post("/api/notifications/markAsRead")
+                            .done(function() {
+                                $(".js-notifications-count").text("").addClass("hide");
+                            });
+                    });
+                });            
+        });
+    </script>
+</body>
+</html>
